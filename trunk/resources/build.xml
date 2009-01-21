@@ -18,7 +18,6 @@
 <!-- #### (3) add the jar files that are required for compiling. edit name.
 		for more include files. duplicate <include name="" /> #### -->
 			<include name="core.jar"/>
-			<include name="javaSift.jar"/>
 		</fileset>
 	</path>		
 	
@@ -61,8 +60,8 @@
 	
 <!-- #### (14) where can the source code be found? edit value. #### -->
 	<property name="source:host"  value="google code" />
-	<property name="source:url"  value="http://code.google.com/p/yourProject" />
-	<property name="source:repository"  value="http://code.google.com/p/yourProject/source/browse/" />
+	<property name="source:url"  value="http://code.google.com/p/preplab" />
+	<property name="source:repository"  value="http://code.google.com/p/preplab/source/browse/" />
 
 
 
