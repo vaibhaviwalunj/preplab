@@ -10,23 +10,24 @@ import java.util.StringTokenizer;
 import java.util.TreeMap;
 
 public class Document {
-	private Map<String, Float[]> words; // n_ij, tf_ij, idf_i
+	public TreeMap<String, Double[]> words; // n_ij, tf_ij, tf_idf
 	int sumof_n_kj;
+	double vectorlength;
 	
 	/** inner class to do sorting of the map **/
 	private static class ValueComparer implements Comparator<String> {
-		private TreeMap<String, Float[]>  _data = null;
-		public ValueComparer (TreeMap<String, Float[]> data){
+		private TreeMap<String, Double[]>  _data = null;
+		public ValueComparer (TreeMap<String, Double[]> data){
 			super();
 			_data = data;
 		}
 
          public int compare(String o1, String o2) {
-        	 float e1 = ((Float[]) _data.get(o1))[2];
-             float e2 = ((Float[]) _data.get(o2))[2];
-             if (e1 < e2) return -1;
+        	 double e1 = ((Double[]) _data.get(o1))[2];
+             double e2 = ((Double[]) _data.get(o2))[2];
+             if (e1 > e2) return -1;
              if (e1 == e2) return 0;
-             if (e1 > e2) return 1;
+             if (e1 < e2) return 1;
              return 0;
          }
 	}
@@ -38,16 +39,19 @@ public class Document {
 		String word;
 		StringTokenizer tokens;
 		sumof_n_kj = 0;
-		Float[] tempdata;
-		words = new TreeMap<String, Float[]>();
+		vectorlength = 0;
+		Double[] tempdata;
+		words = new TreeMap<String, Double[]>();
 		try {
 			line = br.readLine();
 			while (line != null) {
-				tokens = new StringTokenizer(line, " ");
+				tokens = new StringTokenizer(line, ":; \"\',.[]{}()!?-/");
 				while(tokens.hasMoreTokens()) {
-					word = tokens.nextToken();
+					word = tokens.nextToken().toLowerCase();
+					word.trim();
+					if (word.length() < 2) continue;
 					if (words.get(word) == null) {
-						tempdata = new Float[]{0.0f,0.0f,0.0f};
+						tempdata = new Double[]{1.0,0.0,0.0};
 						words.put(word, tempdata);
 					}
 					else {
@@ -70,21 +74,49 @@ public class Document {
 			tempdata = words.get(word);
 			tempdata[1] = tempdata[0] / (float) sumof_n_kj;
 			words.put(word,tempdata);
-			if (parent.corpus.get(word) == null) {
-				parent.corpus.put(word, 1);
-			} else {
-				parent.corpus.put(word, parent.corpus.get(word) + 1);
-			}
+			parent.addWordOccurence(word);
 		}		
+	}
+	
+	public void calculateTfIdf(TfIdf parent) {
+		String word;
+		Double[] corpusdata;
+		Double[] worddata;
+		double tfidf;
+		for (Iterator<String> it = words.keySet().iterator(); it.hasNext(); ) {
+			word = it.next();
+			corpusdata= parent.corpus.get(word);
+			worddata = words.get(word);
+			tfidf = worddata[1] * corpusdata[1];
+			worddata[2] = tfidf;
+			vectorlength += tfidf * tfidf;
+			words.put(word, worddata);
+		}
+		vectorlength = Math.sqrt(vectorlength);
 	}
 	
 	public void printData() {
 		String word;
-		Float[] td;
+		Double[] td;
 		for (Iterator<String> it = words.keySet().iterator(); it.hasNext(); ) {
 			word = it.next();
 			td = words.get(word);
 			System.out.println(word + "\t" + td[0] + "\t" + td[1] + "\t" + td[2]);
 		}
+	}
+	
+	public String[] bestWordList(int numWords) {
+		SortedMap<String, Double[]> sortedWords = new TreeMap<String, Double[]>(new Document.ValueComparer(words));
+		sortedWords.putAll(words);
+		int counter = 0;
+		String[] bestwords = new String[numWords];
+		for (Iterator<String> it = sortedWords.keySet().iterator(); it.hasNext() && (counter < numWords); counter++) {
+			bestwords[counter] = it.next();
+		}
+		return bestwords;
+	}
+	
+	public String[] bestWordList() {
+		return bestWordList(10);
 	}
 }
