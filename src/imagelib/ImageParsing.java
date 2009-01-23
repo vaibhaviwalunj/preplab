@@ -3,19 +3,19 @@ package imagelib;
 import processing.core.*;
 
 public class ImageParsing {
-	public static float[] hist(PApplet app, PImage img) 
+	public static double[] hist(PApplet app, PImage img) 
 	{
 		return histBW(app, img);
 		
 	}
 	
-	public static float[] histBW(PApplet app, PImage img)
+	public static double[] histBW(PApplet app, PImage img)
 	{
 		PImage bwimg = img;
 		bwimg.filter(PConstants.GRAY);
 		
 		int[] inthist = new int[256];
-		float[] histogram = new float[256];
+		double[] histogram = new double[256];
 		
 		int mColor;
 		
@@ -26,24 +26,24 @@ public class ImageParsing {
 			}
 		}
 		
-		float sum = 0.0f;
+		double sum = 0.0;
 		for (int i = 0; i < 256; i++) {
 			sum += inthist[i];
 		}
 		
 		for (int i = 0; i < 256; i++) {
-			histogram[i] = (float)inthist[i] / sum;
+			histogram[i] = (double)inthist[i] / sum;
 		}
 		
 		return histogram;
 	}
 	
-	public static float[][] histColor(PApplet app, PImage img)
+	public static double[][] histColor(PApplet app, PImage img)
 	{
 		int[] rhist = new int[256];
 		int[] ghist = new int[256];
 		int[] bhist = new int[256];
-		float[][] histogram = new float[3][256];
+		double[][] histogram = new double[3][256];
 		
 		int r,g,b;
 		
@@ -58,9 +58,9 @@ public class ImageParsing {
 			}
 		}
 		
-		float rsum = 0.0f;
-		float gsum = 0.0f;
-		float bsum = 0.0f;
+		double rsum = 0.0;
+		double gsum = 0.0;
+		double bsum = 0.0;
 		for (int i = 0; i < 256; i++) {
 			rsum += rhist[i];
 			gsum += ghist[i];
@@ -68,24 +68,19 @@ public class ImageParsing {
 		}
 		
 		for (int i = 0; i < 256; i++) {
-			histogram[0][i] = (float)rhist[i] / rsum;
-			histogram[1][i] = (float)ghist[i] / gsum;
-			histogram[2][i] = (float)bhist[i] / bsum;
+			histogram[0][i] = (double)rhist[i] / rsum;
+			histogram[1][i] = (double)ghist[i] / gsum;
+			histogram[2][i] = (double)bhist[i] / bsum;
 		}
 		
 		return histogram;
 	}
 	
-	public static float[] hueHist(PApplet app, PImage img) {
-		return hueHist(app, img, 360);
-	}
 	
-	public static float[] hueHist(PApplet app, PImage img, int arrayLimit)
+	public static double[] hueHist(PApplet app, PImage img)
 	{
-		app.colorMode(PConstants.HSB, arrayLimit - 1);
-		
-		int[] inthist = new int[arrayLimit];
-		float[] histogram = new float[arrayLimit];
+		int[] inthist = new int[360];
+		double[] histogram = new double[360];
 		
 		img.loadPixels();
 		
@@ -96,14 +91,15 @@ public class ImageParsing {
 			inthist[mColor]++;
 		}
 		
-		float sum = 0.0f;
-		for (int i = 0; i < arrayLimit; i++) {
+		double sum = 0.0;
+		for (int i = 0; i < 360; i++) {
 			sum += inthist[i];
 		}
 		
-		for (int i = 0; i < arrayLimit; i++) {
-			histogram[i] = (float)inthist[i] / sum;
+		for (int i = 0; i < 360; i++) {
+			histogram[i] = (double)inthist[i] / sum;
 		}
+		
 		
 		return histogram;	
 	}

@@ -12,10 +12,10 @@ import java.util.TreeMap;
 
 
 public class TfIdf {
-	TreeMap<String, Document> documents;
-	TreeMap<String, Double[]> corpus; //d_j: t_i elem d_j, idf_j
-	boolean corpusUpdated;
-	int docSize;
+	public TreeMap<String, Document> documents;
+	public TreeMap<String, Double[]> corpus; //d_j: t_i elem d_j, idf_j
+	public boolean corpusUpdated;
+	public int docSize;
 	
 	FilenameFilter filter = new FilenameFilter() {
 		public boolean accept(File dir, String name) {
@@ -94,7 +94,7 @@ public class TfIdf {
 		try {
 			br = new BufferedReader(new FileReader(filename));
 			Document doc = new Document(br, this);
-			documents.put(filename, doc);
+			documents.put(filename.substring(filename.lastIndexOf('/') + 1), doc);
 			//System.out.println(doc.sumof_n_kj);
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -141,15 +141,23 @@ public class TfIdf {
 		return sortedSimilars.keySet().toArray(new String[1]);
 	}
 	
+	public String[] bestWords(String docName, int numWords) {
+		return documents.get(docName).bestWordList(numWords);
+	}
+	
+	public String[] bestWords(String docName) {
+		return documents.get(docName).bestWordList();
+	}
+	
 	public String[] documentNames() {
 		return documents.keySet().toArray(new String[1]);
 	}
 	
-/*	public static void main(String[] args){
-		TfIdf tf = new TfIdf("c:/sketchbook/tfidf_test/data/north_america/");
+	public static void main(String[] args){
+		TfIdf tf = new TfIdf("c:/sketchbook/tfidf_test/data/na/");
 		String word;
 		Double[] corpusdata;
-		/*for (Iterator<String> it = tf.corpus.keySet().iterator(); it.hasNext(); ) {
+		for (Iterator<String> it = tf.corpus.keySet().iterator(); it.hasNext(); ) {
 			word = it.next();
 			corpusdata = tf.corpus.get(word);
 			System.out.println(word + " " + corpusdata[0] + " " + corpusdata[1]);
@@ -174,7 +182,6 @@ public class TfIdf {
 		}
 		
 	}
-	*/
 	
 }
 
