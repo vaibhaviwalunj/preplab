@@ -5,18 +5,35 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FilenameFilter;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.TreeMap;
 
-
+/**
+ * An instance of TfIdf contains TreeMaps for documents and corpus
+ * Documents dictionary uses file names as keys, and the document class as values
+ * Corpus dictionary uses words as keys and [#articles they appear in, idf] as values
+ * 
+ * To use TfIdf algorithm, user needs to create an instance of it
+ * by giving it a folder address. 
+ * When user calls BuildAllDocuments(), TfIdf values for words in each document is
+ * calculated
+ * User can call methods such as bestWordList or similarDocuments using the filename
+ * to get results.
+ * See Document class documentation for more info
+ * 
+ * @author Barkin Aygun
+ *
+ */
 public class TfIdf {
 	public TreeMap<String, Document> documents;
-	public TreeMap<String, Double[]> corpus; //d_j: t_i elem d_j, idf_j
+	public TreeMap<String, Double[]> allwords; //d_j: t_i elem d_j, idf_j
 	public boolean corpusUpdated;
 	public int docSize;
 	
+	/**
+	 * Filename filter to accept .txt files
+	 */
 	FilenameFilter filter = new FilenameFilter() {
 		public boolean accept(File dir, String name) {
 			if (name.toLowerCase().endsWith(".txt")) return true;
@@ -24,7 +41,10 @@ public class TfIdf {
 		}
 	};
 	
-	/** inner class to do sorting of the map **/
+	/**
+	 *  This comparator lets the library sort the documents 
+	 *  according to their similarities 
+	 */
 	private static class ValueComparer implements Comparator<String> {
 		private TreeMap<String, Double>  _data = null;
 		public ValueComparer (TreeMap<String, Double> data){
@@ -43,45 +63,49 @@ public class TfIdf {
 	}
 	
 	public TfIdf(String foldername) {
-		corpus = new TreeMap<String, Double[]>();
+		allwords = new TreeMap<String, Double[]>();
 		documents = new TreeMap<String, Document>();
 		docSize = 0;
-		corpusUpdated = true;
-		
+				
 		File datafolder = new File(foldername);
 		if (datafolder.isDirectory()) {
 			String[] files = datafolder.list(filter);
 			for (int i = 0; i < files.length; i++) {
 				docSize++;
-				InsertDocument(foldername + "/" + files[i]);
+				insertDocument(foldername + "/" + files[i]);
 			}
 		}
 		else {
 			docSize++;
-			InsertDocument(foldername);
+			insertDocument(foldername);
 		}
-		if (corpusUpdated == true)
+		corpusUpdated = false;
+		if (corpusUpdated == false)
 		{
-			String word;
-			Double[] corpusdata;
-			for (Iterator<String> it = corpus.keySet().iterator(); it.hasNext(); ) {
-				word = it.next();
-				corpusdata = corpus.get(word);
-				corpusdata[1] = Math.log(docSize / corpusdata[0]);
-
-				corpus.put(word, corpusdata);
-			}	
-			corpusUpdated = false;
+			updateCorpus();
 		}
 	}
 	
-	public void BuildDocument(String documentName) {
+	public void updateCorpus() {
+		String word;
+		Double[] corpusdata;
+		for (Iterator<String> it = allwords.keySet().iterator(); it.hasNext(); ) {
+			word = it.next();
+			corpusdata = allwords.get(word);
+			corpusdata[1] = Math.log(docSize / corpusdata[0]);
+
+			allwords.put(word, corpusdata);
+		}	
+		corpusUpdated = true;
+	}
+	
+	public void buildDocument(String documentName) {
 		Document doc = documents.get(documentName);
 		if (doc == null) return;
 		doc.calculateTfIdf(this);
 	}
 	
-	public void BuildAllDocuments() {
+	public void buildAllDocuments() {
 		String word;
 		for (Iterator<String> it = documents.keySet().iterator(); it.hasNext(); ) {
 			word = it.next();
@@ -89,12 +113,13 @@ public class TfIdf {
 		}
 	}
 	
-	public void InsertDocument(String filename) {
+	public void insertDocument(String filename) {
 		BufferedReader br;
 		try {
 			br = new BufferedReader(new FileReader(filename));
 			Document doc = new Document(br, this);
 			documents.put(filename.substring(filename.lastIndexOf('/') + 1), doc);
+			if (corpusUpdated == false) updateCorpus();
 			//System.out.println(doc.sumof_n_kj);
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -104,13 +129,13 @@ public class TfIdf {
 	
 	public void addWordOccurence(String word) {
 		Double[] tempdata;
-		if (corpus.get(word) == null) {
+		if (allwords.get(word) == null) {
 			tempdata = new Double[]{1.0,0.0};
-			corpus.put(word, tempdata);
+			allwords.put(word, tempdata);
 		} else {
-			tempdata = corpus.get(word);
+			tempdata = allwords.get(word);
 			tempdata[0]++;
-			corpus.put(word,tempdata);
+			allwords.put(word,tempdata);
 			
 		}
 	}
@@ -154,15 +179,16 @@ public class TfIdf {
 	}
 	
 	public static void main(String[] args){
+		//Test code for TfIdf
 		TfIdf tf = new TfIdf("c:/sketchbook/tfidf_test/data/na/");
 		String word;
 		Double[] corpusdata;
-		for (Iterator<String> it = tf.corpus.keySet().iterator(); it.hasNext(); ) {
+		for (Iterator<String> it = tf.allwords.keySet().iterator(); it.hasNext(); ) {
 			word = it.next();
-			corpusdata = tf.corpus.get(word);
+			corpusdata = tf.allwords.get(word);
 			System.out.println(word + " " + corpusdata[0] + " " + corpusdata[1]);
 		}	
-		tf.BuildAllDocuments();
+		tf.buildAllDocuments();
 		String[] bwords;
 		String[] bdocs;
 		for (Iterator<String> it = tf.documents.keySet().iterator(); it.hasNext(); ) {

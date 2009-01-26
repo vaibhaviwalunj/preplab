@@ -3,84 +3,115 @@ package imagelib;
 import processing.core.*;
 
 public class ImageParsing {
+	public static final char RED = 0;
+	public static final char GREEN = 1;
+	public static final char BLUE = 2;
+	public static final char ALL = 3;
+	
 	public static double[] hist(PApplet app, PImage img) 
 	{
-		return histBW(app, img);
-		
+		return histBW(app, img, 256);
 	}
 	
-	public static double[] histBW(PApplet app, PImage img)
+	public static double[] histBW(PApplet app, PImage img, int bins)
 	{
 		PImage bwimg = img;
 		bwimg.filter(PConstants.GRAY);
 		
-		int[] inthist = new int[256];
-		double[] histogram = new double[256];
+		int[] inthist = new int[bins];
+		double[] histogram = new double[bins];
 		
 		int mColor;
 		
-		for (int i = 0; i < img.width; i++) {
-			for (int j = 0; j < img.height; j++) {
-				mColor = bwimg.get(i,j) >> 16 & 0xFF;
-				inthist[mColor]++;
+		for (int i = 0; i < img.pixels.length; i++)
+		 {
+				mColor = bwimg.pixels[i] >> 16 & 0xFF;
+				inthist[(int) Math.floor(mColor * bins / 256)]++;
 			}
-		}
 		
-		double sum = 0.0;
-		for (int i = 0; i < 256; i++) {
-			sum += inthist[i];
-		}
-		
-		for (int i = 0; i < 256; i++) {
-			histogram[i] = (double)inthist[i] / sum;
+		for (int i = 0; i < bins; i++) {
+			histogram[i] = (double)inthist[i] / (img.pixels.length);
 		}
 		
 		return histogram;
 	}
 	
-	public static double[][] histColor(PApplet app, PImage img)
+	public static double[] histColor(PApplet app, PImage img) {
+		return histColor(app, img, 256, ALL);
+	}
+	
+	public static double[] histColor(PApplet app, PImage img, int bins) {
+		return histColor(app, img, bins, ALL);
+	}
+	
+	public static double[] histColor(PApplet app, PImage img, char COLOR) {
+		return histColor(app, img, 256, COLOR);
+	}
+	
+	public static double[] histColor(PApplet app, PImage img, int bins, int COLOR)
 	{
-		int[] rhist = new int[256];
-		int[] ghist = new int[256];
-		int[] bhist = new int[256];
-		double[][] histogram = new double[3][256];
+		int[] rhist = new int[bins];
+		int[] ghist = new int[bins];
+		int[] bhist = new int[bins];
+		
+		double[] histogram;
+		
 		
 		int r,g,b;
 		
-		for (int i = 0; i < img.width; i++) {
-			for (int j = 0; j < img.height; j++) {
-				r = img.get(i,j) >> 16 & 0xFF;
-				g = img.get(i,j) >> 8 & 0xFF;
-				b = img.get(i,j) & 0xFF;
-				rhist[r]++;
-				ghist[g]++;
-				bhist[b]++;
+		img.loadPixels();
+		
+		for (int i = 0; i < img.pixels.length; i++)
+		{
+			r = img.pixels[i] >> 16 & 0xFF;
+			g = img.pixels[i] >> 8 & 0xFF;
+			b = img.pixels[i] & 0xFF;
+			rhist[(int) Math.floor(r * bins / 256)]++;
+			ghist[(int) Math.floor(g * bins / 256)]++;
+			bhist[(int) Math.floor(b * bins / 256)]++;
+		}
+		
+		if (COLOR == ALL) {
+			histogram = new double[bins * 3];
+			for (int i = 0; i < bins; i++) {
+				histogram[i] = (double)rhist[i] / img.pixels.length;
+				histogram[bins+i] = (double)ghist[i] / img.pixels.length;
+				histogram[bins+bins+i] = (double)bhist[i] / img.pixels.length;
 			}
 		}
-		
-		double rsum = 0.0;
-		double gsum = 0.0;
-		double bsum = 0.0;
-		for (int i = 0; i < 256; i++) {
-			rsum += rhist[i];
-			gsum += ghist[i];
-			bsum += bhist[i];
+		else if (COLOR == RED){
+			histogram = new double[bins];
+			for (int i = 0; i < bins; i++) {
+				histogram[i] = (double)rhist[i] / img.pixels.length;
+			}
 		}
-		
-		for (int i = 0; i < 256; i++) {
-			histogram[0][i] = (double)rhist[i] / rsum;
-			histogram[1][i] = (double)ghist[i] / gsum;
-			histogram[2][i] = (double)bhist[i] / bsum;
+		else if (COLOR == GREEN){
+			histogram = new double[bins];
+			for (int i = 0; i < bins; i++) {
+				histogram[i] = (double)ghist[i] / img.pixels.length;
+			}
+		}
+		else if (COLOR == BLUE){
+			histogram = new double[bins];
+			for (int i = 0; i < bins; i++) {
+				histogram[i] = (double)bhist[i] / img.pixels.length;
+			}
+		}
+		else
+		{
+			histogram = new double[1];
 		}
 		
 		return histogram;
 	}
+	public static double[] histHue(PApplet app, PImage img) {
+		return histHue(app, img, 360);
+	}
 	
-	
-	public static double[] hueHist(PApplet app, PImage img)
+	public static double[] histHue(PApplet app, PImage img, int hueLim)
 	{
-		int[] inthist = new int[360];
-		double[] histogram = new double[360];
+		int[] inthist = new int[hueLim];
+		double[] histogram = new double[hueLim];
 		
 		img.loadPixels();
 		
@@ -88,16 +119,11 @@ public class ImageParsing {
 		
 		for (int i = 0; i < img.pixels.length; i++) {
 			mColor = (int) app.hue(img.pixels[i]);
-			inthist[mColor]++;
+			inthist[(int) Math.floor(mColor * hueLim / 360) ]++;
 		}
 		
-		double sum = 0.0;
-		for (int i = 0; i < 360; i++) {
-			sum += inthist[i];
-		}
-		
-		for (int i = 0; i < 360; i++) {
-			histogram[i] = (double)inthist[i] / sum;
+		for (int i = 0; i < hueLim; i++) {
+			histogram[i] = (double)inthist[i] / (img.pixels.length);
 		}
 		
 		
