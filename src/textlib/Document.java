@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.SortedMap;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
@@ -85,7 +84,7 @@ public class Document {
 		double tfidf;
 		for (Iterator<String> it = words.keySet().iterator(); it.hasNext(); ) {
 			word = it.next();
-			corpusdata= parent.corpus.get(word);
+			corpusdata= parent.allwords.get(word);
 			worddata = words.get(word);
 			tfidf = worddata[1] * corpusdata[1];
 			worddata[2] = tfidf;
