@@ -18,6 +18,7 @@
 <!-- #### (3) add the jar files that are required for compiling. edit name.
 		for more include files. duplicate <include name="" /> #### -->
 			<include name="core.jar"/>
+			<include name="javaSift.jar"/>
 		</fileset>
 	</path>		
 	
@@ -135,6 +136,12 @@
   	<mkdir dir="${dist}/reference" />
   	<mkdir dir="${dist}/src" />
   	<jar jarfile="${dist}/library/${jarFile}" basedir="${bin}"/>
+  	<copy todir="${dist}/library">
+  	  	<fileset dir="">
+  			<include name="javaSift.jar"/>
+  	  		<include name="Jama-1.0.2.jar"/>
+  		</fileset>
+  	</copy>
   	<copy todir="${dist}/examples">
   		<fileset dir="examples"/>
   	</copy>
@@ -157,7 +164,7 @@
  			<!-- #### (9) add packages to be added to reference. #### -->
 			<include name="**/*"/>
  			<include name="core.jar"/>
- 			<include name="weka.jar"/>
+ 			<include name="javaSift.jar"/>
 		</fileset>
  	</javadoc>
  	
