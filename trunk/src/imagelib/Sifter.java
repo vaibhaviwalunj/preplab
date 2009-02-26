@@ -15,6 +15,12 @@ import mpi.cbg.fly.*;
 import processing.core.*;
 
 // Java Libraries
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.Vector;
 
 /**
@@ -89,8 +95,8 @@ public class Sifter {
 	 * 
 	 * @see Feature
 	 */
-	public static Vector<Feature> runSift(PImage image) {
-		return runSift(image, steps, initial_sigma, fdsize, fdbins, min_size, max_size);
+	public static ArrayList<Feature> runSift(PImage image, String imageId) {
+		return runSift(image, steps, initial_sigma, fdsize, fdbins, min_size, max_size, imageId);
 	}
 	
 	/**
@@ -107,8 +113,8 @@ public class Sifter {
 	 * 
 	 * @see Feature
 	 */
-	public static Vector<Feature> runSift(PImage image, int steps, float initial_sigma,
-									int fdsize, int fdbins, int min_size, int max_size) {
+	public static ArrayList<Feature> runSift(PImage image, int steps, float initial_sigma,
+									int fdsize, int fdbins, int min_size, int max_size, String imageId) {
 		Vector<mpi.cbg.fly.Feature> fs;
 		FloatArray2DSIFT sift = new FloatArray2DSIFT( fdsize, fdbins );
 		FloatArray2D fa = ConvertImage(image);
@@ -119,12 +125,112 @@ public class Sifter {
 		sift.init(fa, steps, initial_sigma, min_size, max_size);
 		fs = sift.run(max_size);
 		
-		Vector<Feature> fs1 = new Vector<Feature>(fs.size());
+		ArrayList<Feature> fs1 = new ArrayList<Feature>(fs.size());
 		for (mpi.cbg.fly.Feature f : fs) {
-			Feature tempf = new Feature(f.scale, f.orientation, f.location, f.descriptor);;
+			Feature tempf = new Feature(f.scale, f.orientation, f.location, f.descriptor);
+			tempf.imageId = imageId;
 			fs1.add(tempf);
 		}
 		
 		return fs1;
+	}
+	
+	public static int[] matchFeatures(ArrayList<Feature> set_one, ArrayList<Feature> set_two, float threshold) {
+		int[] matches = new int[set_one.size()];
+		int i = 0;
+		for (Feature f : set_one) {
+			matches[i++] = closestMatch(f, set_two, threshold);
+		}
+		return matches;		
+	}
+	
+	public static int closestMatch(Feature f1, ArrayList<Feature> possible_matches, float threshold) {
+		float maxMatch = 0;
+		float secondMax = 0;
+		float desDist = 0;
+		int maxIndex = 0;
+		int curIndex = 0;
+		for (Feature f : possible_matches) {
+			desDist = f1.descriptorDistance(f);
+			//if (desDist < threshold) {curIndex++; continue;};
+			if (desDist > maxMatch) {
+				secondMax = maxMatch;
+				maxIndex = curIndex;
+				maxMatch = desDist;
+			}
+			curIndex++;
+		}
+		System.out.print(maxMatch + " against " + secondMax);
+		if (maxMatch > 0.8f && maxMatch * 0.8f < secondMax) {
+			System.out.println(" succeeds");
+			return maxIndex;
+		}
+		else {
+			System.out.println(" fails");
+			return -1;
+		}
+	}
+	
+	public static void saveFeatures(ArrayList<Feature> fs, String filename) {
+		FileWriter fw;
+		try {
+			fw = new FileWriter(filename);
+			for (Feature f : fs) {
+				fw.write(f.toString());
+			}
+			fw.close();
+		} catch (IOException e) {
+			System.out.println("File can not be opened for write: " + filename);
+		}
+	}
+	
+	public static ArrayList<Feature> loadFeatures(String filename) {
+		BufferedReader in;
+		String line;
+		ArrayList<Feature> fs = new ArrayList<Feature>();
+		try {
+			in = new BufferedReader(new FileReader(filename));
+			while ((line = in.readLine()) != null) {
+				fs.add(new Feature(line));
+			}
+		} catch (IOException e) {
+			System.out.println("File can not be opened for read: " + filename);
+		}
+		return fs;
+	}
+	
+	public static void FindObjects(ArrayList<Feature> features, ArrayList<Feature> database) {
+		Feature f;
+		Match match = null;
+		Hashtable<String, Match> objMatches = new Hashtable<String, Match>();
+		Integer[] fs;
+		Integer[] ms; 
+		int[] matches = Sifter.matchFeatures(features, database, 0.7f);
+		for (int i = 0; i < matches.length; i++) {
+			if (matches[i] > -1) {
+				f = database.get(matches[i]);
+				if (objMatches.containsKey(f.imageId)) {
+					objMatches.get(f.imageId).featureIds.add(i);
+					objMatches.get(f.imageId).matchIds.add(matches[i]);
+				} else {
+					match = new Match(f.imageId);
+					match.featureIds.add(i);
+					match.matchIds.add(matches[i]);
+					objMatches.put(f.imageId, match);
+				}
+			}
+		}
+		
+		//Go through matches to see if there are more than 5 feature matches per object
+		for (String objKey : objMatches.keySet()) {
+			fs = objMatches.get(objKey).featureIds.toArray(new Integer[1]);
+			ms = objMatches.get(objKey).matchIds.toArray(new Integer[1]);
+			if (fs.length > 5) {
+				for (int i = 0; i < fs.length; i++) {
+					features.get(fs[i]).matched = true;
+					features.get(fs[i]).matchId = database.get(ms[i]).imageId;
+				}
+			}
+		}
 	}
 }
